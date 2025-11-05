@@ -66,9 +66,31 @@ const Agent = ({
       setIsSpeaking(false);
     };
 
-    const onError = (error: Error) => {
+    const onError = (error: any) => {
       console.error("❌ Vapi Error:", error);
-      alert(`Vapi Error: ${error.message || "Unknown error"}`);
+      console.error("❌ Error details:", {
+        message: error?.message,
+        name: error?.name,
+        code: error?.code,
+        type: error?.type,
+        status: error?.status,
+        statusText: error?.statusText,
+        response: error?.response,
+        data: error?.data,
+        stack: error?.stack,
+        fullError: JSON.stringify(error, Object.getOwnPropertyNames(error)),
+      });
+      
+      // Try to extract meaningful error message
+      const errorMessage = 
+        error?.message || 
+        error?.data?.message || 
+        error?.response?.data?.message ||
+        error?.code ||
+        error?.name ||
+        "Unknown error - Check browser console for details";
+      
+      alert(`Vapi Error: ${errorMessage}\n\nCheck browser console (F12) for full error details.`);
       setCallStatus(CallStatus.INACTIVE);
     };
 
@@ -141,36 +163,60 @@ const Agent = ({
         console.log("🚀 Starting Vapi workflow:", workflowId);
         console.log("📝 Variable values:", { username: userName, userid: userId });
         console.log("🔑 Vapi token:", process.env.NEXT_PUBLIC_VAPI_WEB_TOKEN ? "Set" : "Missing");
+        console.log("🔍 Workflow ID type:", typeof workflowId);
+        console.log("🔍 Workflow ID length:", workflowId?.length);
+
+        // Verify workflow ID format (should be a UUID)
+        if (!workflowId || typeof workflowId !== 'string') {
+          alert("Invalid Workflow ID. Please check NEXT_PUBLIC_VAPI_WORKFLOW_ID in your environment variables.");
+          setCallStatus(CallStatus.INACTIVE);
+          return;
+        }
 
         try {
-          const result = await vapi.start(workflowId, {
+          // Vapi 2.0: Start workflow with object format
+          console.log("📞 Calling vapi.start() with workflow ID:", workflowId);
+          const result = await vapi.start({
+            workflowId: workflowId,
             variableValues: {
-              username: userName,
-              userid: userId,
+              username: userName || "User",
+              userid: userId || "unknown",
             },
-          });
+          } as any);
           console.log("✅ Vapi.start() completed:", result);
-        } catch (startError) {
+        } catch (startError: any) {
           console.error("❌ Error in vapi.start():", startError);
+          console.error("❌ Full error object:", JSON.stringify(startError, null, 2));
           throw startError;
         }
       } else {
-      let formattedQuestions = "";
-      if (questions) {
-        formattedQuestions = questions
-          .map((question) => `- ${question}`)
-          .join("\n");
-      }
+        // For interview type, use assistant (not workflow)
+        let formattedQuestions = "";
+        if (questions) {
+          formattedQuestions = questions
+            .map((question) => `- ${question}`)
+            .join("\n");
+        }
 
-      await vapi.start(interviewer, {
-        variableValues: {
-          questions: formattedQuestions,
-        },
-      });
+        // Vapi 2.0: Start assistant with object format
+        console.log("📞 Starting interview with assistant");
+        await vapi.start({
+          assistant: interviewer,
+          variableValues: {
+            questions: formattedQuestions,
+          },
+        } as any);
       }
     } catch (error: any) {
-      console.error("Error starting Vapi call:", error);
-      alert(`Failed to start call: ${error?.message || "Unknown error"}`);
+      console.error("❌ Error starting Vapi call:", error);
+      console.error("❌ Error details:", {
+        message: error?.message,
+        name: error?.name,
+        code: error?.code,
+        stack: error?.stack,
+        fullError: error,
+      });
+      alert(`Failed to start call: ${error?.message || error?.name || "Unknown error"}\n\nCheck browser console for details.`);
       setCallStatus(CallStatus.INACTIVE);
     }
   };
