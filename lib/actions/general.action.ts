@@ -95,31 +95,61 @@ export async function getLatestInterviews(
 ): Promise<Interview[] | null> {
   const { userId, limit = 20 } = params;
 
-  const interviews = await db
-    .collection("interviews")
-    .orderBy("createdAt", "desc")
-    .where("finalized", "==", true)
-    .where("userId", "!=", userId)
-    .limit(limit)
-    .get();
+  try {
+    // Firestore requires a composite index for where + orderBy on different fields
+    // Fetch all finalized interviews, filter and sort client-side
+    const interviews = await db
+      .collection("interviews")
+      .where("finalized", "==", true)
+      .get();
 
-  return interviews.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  })) as Interview[];
+    // Filter out user's own interviews and sort by createdAt descending
+    const filteredAndSorted = interviews.docs
+      .filter((doc) => doc.data().userId !== userId)
+      .map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }))
+      .sort((a, b) => {
+        const dateA = new Date(a.createdAt || 0).getTime();
+        const dateB = new Date(b.createdAt || 0).getTime();
+        return dateB - dateA; // Descending order
+      })
+      .slice(0, limit) as Interview[];
+
+    return filteredAndSorted;
+  } catch (error) {
+    console.error("Error fetching latest interviews:", error);
+    return null;
+  }
 }
 
 export async function getInterviewsByUserId(
   userId: string
 ): Promise<Interview[] | null> {
-  const interviews = await db
-    .collection("interviews")
-    .where("userId", "==", userId)
-    .orderBy("createdAt", "desc")
-    .get();
+  try {
+    // Firestore requires a composite index for where + orderBy on different fields
+    // Fetch all interviews for the user and sort client-side
+    const interviews = await db
+      .collection("interviews")
+      .where("userId", "==", userId)
+      .get();
 
-  return interviews.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  })) as Interview[];
+    // Sort by createdAt descending on the client side
+    const sortedInterviews = interviews.docs
+      .map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }))
+      .sort((a, b) => {
+        const dateA = new Date(a.createdAt || 0).getTime();
+        const dateB = new Date(b.createdAt || 0).getTime();
+        return dateB - dateA; // Descending order
+      }) as Interview[];
+
+    return sortedInterviews;
+  } catch (error) {
+    console.error("Error fetching interviews by user ID:", error);
+    return null;
+  }
 }

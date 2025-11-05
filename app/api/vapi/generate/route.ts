@@ -37,12 +37,25 @@ export async function POST(request: Request) {
       createdAt: new Date().toISOString(),
     };
 
-    await db.collection("interviews").add(interview);
+    const docRef = await db.collection("interviews").add(interview);
+    console.log("Interview created successfully with ID:", docRef.id);
 
-    return Response.json({ success: true }, { status: 200 });
-  } catch (error) {
-    console.error("Error:", error);
-    return Response.json({ success: false, error: error }, { status: 500 });
+    return Response.json({ success: true, interviewId: docRef.id }, { status: 200 });
+  } catch (error: any) {
+    console.error("Error creating interview:", error);
+    console.error("Error details:", {
+      message: error?.message,
+      code: error?.code,
+      stack: error?.stack,
+    });
+    return Response.json(
+      { 
+        success: false, 
+        error: error?.message || "Unknown error",
+        code: error?.code 
+      }, 
+      { status: 500 }
+    );
   }
 }
 

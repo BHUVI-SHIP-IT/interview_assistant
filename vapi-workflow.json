@@ -1,0 +1,190 @@
+{
+  "name": "ai_interview_workflow",
+  "nodes": [
+    {
+      "name": "introduction",
+      "type": "conversation",
+      "isStart": true,
+      "metadata": {
+        "position": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      "prompt": "",
+      "messagePlan": {
+        "firstMessage": "Hello {{username}}! Let's prepare your interview. I'll ask you a few questions and generate a perfect interview just for you. Are you ready?"
+      },
+      "toolIds": []
+    },
+    {
+      "name": "collect_role",
+      "type": "conversation",
+      "metadata": {
+        "position": {
+          "x": 0,
+          "y": 200
+        }
+      },
+      "prompt": "Ask the user what job role they are interviewing for. Examples: Frontend Developer, Backend Developer, Full Stack Developer, Data Scientist, etc. Keep it brief and friendly. Extract the role from their response and store it in a variable called 'role'.",
+      "messagePlan": {
+        "firstMessage": "What job role are you interviewing for?"
+      },
+      "toolIds": []
+    },
+    {
+      "name": "collect_level",
+      "type": "conversation",
+      "metadata": {
+        "position": {
+          "x": 0,
+          "y": 400
+        }
+      },
+      "prompt": "Ask the user about their experience level. Options are: Junior, Mid, or Senior. Make it conversational and help them choose. Normalize the answer to 'Junior', 'Mid', or 'Senior' and store it in a variable called 'level'.",
+      "messagePlan": {
+        "firstMessage": "What's your experience level? Are you a Junior, Mid-level, or Senior professional?"
+      },
+      "toolIds": []
+    },
+    {
+      "name": "collect_type",
+      "type": "conversation",
+      "metadata": {
+        "position": {
+          "x": 0,
+          "y": 600
+        }
+      },
+      "prompt": "Ask the user what type of interview questions they want. Options are: Technical (focus on technical skills), Behavioural (focus on soft skills and past experiences), or Mixed (combination of both). Keep it brief. Normalize the answer to 'Technical', 'Behavioural', or 'Mixed' and store it in a variable called 'type'.",
+      "messagePlan": {
+        "firstMessage": "What type of interview questions would you like? Technical, Behavioural, or Mixed?"
+      },
+      "toolIds": []
+    },
+    {
+      "name": "collect_techstack",
+      "type": "conversation",
+      "metadata": {
+        "position": {
+          "x": 0,
+          "y": 800
+        }
+      },
+      "prompt": "Ask the user about the tech stack or technologies relevant to the role. They can mention multiple technologies separated by commas. Examples: React, TypeScript, Node.js or Python, Django, PostgreSQL. Keep it conversational. Store the answer in a variable called 'techstack'.",
+      "messagePlan": {
+        "firstMessage": "What technologies or tech stack are relevant to this role? You can mention multiple technologies separated by commas."
+      },
+      "toolIds": []
+    },
+    {
+      "name": "collect_amount",
+      "type": "conversation",
+      "metadata": {
+        "position": {
+          "x": 0,
+          "y": 1000
+        }
+      },
+      "prompt": "Ask the user how many interview questions they want. Suggest a range like 5 to 15 questions. Keep it brief. Store the number in a variable called 'amount'.",
+      "messagePlan": {
+        "firstMessage": "How many interview questions would you like? I recommend between 5 to 15 questions."
+      },
+      "toolIds": []
+    },
+    {
+      "name": "generate_interview",
+      "type": "apiRequest",
+      "metadata": {
+        "position": {
+          "x": 0,
+          "y": 1200
+        }
+      },
+      "url": "https://your-domain.com/api/vapi/generate",
+      "method": "POST",
+      "body": {
+        "type": "{{type}}",
+        "role": "{{role}}",
+        "level": "{{level}}",
+        "techstack": "{{techstack}}",
+        "amount": "{{amount}}",
+        "userid": "{{userid}}"
+      },
+      "output": [
+        {
+          "key": "success",
+          "target": "generation_success",
+          "type": "boolean"
+        },
+        {
+          "key": "interviewId",
+          "target": "generated_interview_id",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "completion",
+      "type": "conversation",
+      "metadata": {
+        "position": {
+          "x": 0,
+          "y": 1400
+        }
+      },
+      "prompt": "Thank the user and confirm that their interview has been generated successfully. Let them know they can now proceed to practice the interview. Keep it brief and friendly.",
+      "messagePlan": {
+        "firstMessage": "Perfect! I've generated your personalized interview questions based on your preferences. You can now start practicing your interview. Good luck!"
+      },
+      "toolIds": []
+    }
+  ],
+  "edges": [
+    {
+      "from": "introduction",
+      "to": "collect_role"
+    },
+    {
+      "from": "collect_role",
+      "to": "collect_level"
+    },
+    {
+      "from": "collect_level",
+      "to": "collect_type"
+    },
+    {
+      "from": "collect_type",
+      "to": "collect_techstack"
+    },
+    {
+      "from": "collect_techstack",
+      "to": "collect_amount"
+    },
+    {
+      "from": "collect_amount",
+      "to": "generate_interview"
+    },
+    {
+      "from": "generate_interview",
+      "to": "completion"
+    }
+  ],
+  "model": {
+    "provider": "openai",
+    "model": "gpt-4",
+    "temperature": 0.7,
+    "maxTokens": 200
+  },
+  "voice": {
+    "provider": "11labs",
+    "voiceId": "sarah",
+    "stability": 0.4,
+    "similarityBoost": 0.8,
+    "speed": 0.9,
+    "style": 0.5,
+    "useSpeakerBoost": true
+  },
+  "globalPrompt": "You are a friendly AI assistant helping users prepare for job interviews. Your goal is to collect information about the job role, experience level, interview type, tech stack, and number of questions they want. Be conversational, brief, and helpful. Guide users through the process naturally."
+}
+

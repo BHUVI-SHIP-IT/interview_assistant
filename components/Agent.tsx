@@ -118,7 +118,16 @@ const Agent = ({
     setCallStatus(CallStatus.CONNECTING);
 
     if (type === "generate") {
-      await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, {
+      const workflowId = process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID;
+      
+      if (!workflowId) {
+        console.error("NEXT_PUBLIC_VAPI_WORKFLOW_ID is not set in .env.local");
+        alert("Vapi Workflow ID is not configured. Please set NEXT_PUBLIC_VAPI_WORKFLOW_ID in your .env.local file.");
+        setCallStatus(CallStatus.INACTIVE);
+        return;
+      }
+
+      await vapi.start(workflowId, {
         variableValues: {
           username: userName,
           userid: userId,
